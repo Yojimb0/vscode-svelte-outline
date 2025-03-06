@@ -2,7 +2,8 @@
   "name": "vscode-svelte-outline",
   "displayName": "Better outline for Svelte",
   "description": "Better outline for svelte files in VS Code",
-  "version": "0.0.2",
+  "icon": "media/icon.png",
+  "version": "0.0.4",
   "publisher": "Yojmb0",
   "repository": {
     "type": "git",
