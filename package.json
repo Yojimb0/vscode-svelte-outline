@@ -3,6 +3,10 @@
   "displayName": "vscode-svelte-outline",
   "description": "Better outline for svelte files in VS Code",
   "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Yojimb0/vscode-svelte-outline.git"
+  },
   "engines": {
     "vscode": "^1.98.0"
   },
