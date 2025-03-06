@@ -3,7 +3,7 @@
   "displayName": "Better outline for Svelte",
   "description": "Better outline for svelte files in VS Code",
   "icon": "media/icon.png",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "publisher": "Yojmb0",
   "repository": {
     "type": "git",
@@ -18,11 +18,15 @@
   "activationEvents": [],
   "main": "./extension.js",
   "contributes": {
-    "commands": [{
-      "command": "vscode-svelte-outline.helloWorld",
-      "title": "Hello World"
-    }]
-  },
+  "views": {
+    "explorer": [
+      {
+        "id": "svelteFunctionOutline",
+        "name": "Svelte Functions"
+      }
+    ]
+  }
+},
   "scripts": {
     "lint": "eslint .",
     "pretest": "pnpm run lint",
