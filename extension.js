@@ -1,36 +1,168 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 const vscode = require('vscode');
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
+class SvelteFunctionProvider {
+  constructor() {
+    this._onDidChangeTreeData = new vscode.EventEmitter();
+    this.onDidChangeTreeData = this._onDidChangeTreeData.event;
+  }
 
-/**
- * @param {vscode.ExtensionContext} context
- */
-function activate(context) {
+  refresh() {
+    this._onDidChangeTreeData.fire();
+  }
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "vscode-svelte-outline" is now active!');
+  getTreeItem(element) {
+    return element;
+  }
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with  registerCommand
-	// The commandId parameter must match the command field in package.json
-	const disposable = vscode.commands.registerCommand('vscode-svelte-outline.helloWorld', function () {
-		// The code you place here will be executed every time your command is executed
+  async getChildren() {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor || !editor.document.fileName.endsWith('.svelte')) {
+      return [];
+    }
 
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from vscode-svelte-outline!');
-	});
+    const text = editor.document.getText();
+    const functions = this.findFunctions(text);
+    
+    return this.buildFunctionHierarchy(functions);
+  }
 
-	context.subscriptions.push(disposable);
+  buildFunctionHierarchy(functions) {
+    const treeItems = [];
+    
+    for (const func of functions) {
+      const treeItem = new vscode.TreeItem(
+        func.name,
+        vscode.TreeItemCollapsibleState.None
+      );
+      
+      // Add indentation, emoji (wrench for regular functions, sparkles for HOF), function name and line number
+      const emoji = '🔧';
+      treeItem.label = '  '.repeat(func.nestingLevel) + emoji + ' ' + func.name;
+      
+      treeItem.command = {
+        command: 'svelteFunctionOutline.gotoLine',
+        title: 'Go to Function',
+        arguments: [func.line, func.column]
+      };
+      
+      treeItems.push(treeItem);
+    }
+    
+    return treeItems;
+  }
+
+  findFunctions(text) {
+    const functions = [];
+    const lines = text.split('\n');
+    let scriptContent = '';
+    let inScript = false;
+    let lineOffset = 0;
+    let braceStack = [];
+    
+    // Extract script content
+    lines.forEach((line, index) => {
+      if (line.match(/<script lang="ts">/)) {
+        inScript = true;
+        lineOffset = index + 1;
+        return;
+      }
+      if (line.includes('</script>')) {
+        inScript = false;
+        return;
+      }
+      if (inScript) {
+        scriptContent += line + '\n';
+      }
+    });
+
+    // Split script content into lines for better analysis
+    const scriptLines = scriptContent.split('\n');
+    let nestingLevel = 0;
+
+    for (let i = 0; i < scriptLines.length; i++) {
+      const line = scriptLines[i];
+      
+      // Track brace nesting
+      for (const char of line) {
+        if (char === '{') braceStack.push(i);
+        if (char === '}' && braceStack.length > 0) braceStack.pop();
+      }
+
+      // Regular function patterns
+      const functionPatterns = [
+        /(?:const|let)\s+(\w+)\s*=\s*(?:async\s*)?(?:\([^)]*\)|\w+)\s*=>/
+      ];
+
+      // Check for regular functions
+      for (const pattern of functionPatterns) {
+        const match = line.match(pattern);
+        if (match) {
+          const name = match[1] || match[2];
+          const column = line.indexOf(match[0]);
+          nestingLevel = braceStack.length;
+
+          functions.push({
+            name,
+            line: i + lineOffset,
+            column,
+            nestingLevel: Math.max(0, nestingLevel - 1)
+          });
+        }
+      }
+    }
+
+    return functions;
+  }
 }
 
-// This method is called when your extension is deactivated
+function activate(context) {
+  const functionProvider = new SvelteFunctionProvider();
+  
+  vscode.window.registerTreeDataProvider(
+    'svelteFunctionOutline',
+    functionProvider
+  );
+
+  let disposable = vscode.commands.registerCommand(
+    'svelteFunctionOutline.gotoLine',
+    (line, column) => {
+      const editor = vscode.window.activeTextEditor;
+      if (editor) {
+        // Create position with both line and column information
+        const position = new vscode.Position(line, column);
+        
+        // Set selection and reveal the position
+        editor.selection = new vscode.Selection(position, position);
+        editor.revealRange(
+          new vscode.Range(position, position),
+          vscode.TextEditorRevealType.InCenter
+        );
+
+        // Focus the editor
+        vscode.window.showTextDocument(editor.document, {
+          selection: new vscode.Selection(position, position),
+          preserveFocus: false
+        });
+      }
+    }
+  );
+
+  context.subscriptions.push(disposable);
+
+  // Refresh the tree view when the active editor changes
+  vscode.window.onDidChangeActiveTextEditor(() => {
+    functionProvider.refresh();
+  });
+
+  // Refresh when the document is saved
+  vscode.workspace.onDidSaveTextDocument(() => {
+    functionProvider.refresh();
+  });
+}
+
 function deactivate() {}
 
 module.exports = {
-	activate,
-	deactivate
-}
+  activate,
+  deactivate
+};
