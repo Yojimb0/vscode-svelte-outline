@@ -1,15 +1,15 @@
 {
   "name": "vscode-svelte-outline",
-  "displayName": "vscode-svelte-outline",
+  "displayName": "Better outline for Svelte",
   "description": "Better outline for svelte files in VS Code",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "Yojmb0",
   "repository": {
     "type": "git",
     "url": "https://github.com/Yojimb0/vscode-svelte-outline.git"
   },
   "engines": {
-    "vscode": "^1.98.0"
+    "vscode": "^1.90.0"
   },
   "categories": [
     "Other"
@@ -28,7 +28,7 @@
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.98.0",
+    "@types/vscode": "^1.90.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
     "eslint": "^9.21.0",
